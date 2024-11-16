@@ -5,7 +5,6 @@ import json
 from collections import defaultdict  #for create_inverted_index
 from nltk.stem import PorterStemmer
 
-all_tokens = []  #global
 inverted_index = defaultdict(list)  #tdefault dict will handle missing keys if necessary
 
 stemmer = PorterStemmer()  #Initialize Porter Stemmer
@@ -52,13 +51,6 @@ def tokenize_text_and_stem(text):
     stemmed_tokens = [stemmer.stem(token) for token in raw_tokens]
     print(f"Tokens: {stemmed_tokens}")  #Add this line to verify tokens
     return stemmed_tokens
-
-
-# def append_to_token_list(new_tokens): #helper for tokenizer. You can leave this alone
-#     global all_tokens
-#     all_tokens.extend(new_tokens) #this will hold the tokens permanently. NOte: May need to clear memory after runs, depending on how we implement this
-    #I figured we can store the inverted index into a JSON file for better memory usage (when looking
-    #at the porter stemmer on various websites like geeksforgeeks.org suggested keeping inverted index in file)
 
 
 #Create the inverted index
