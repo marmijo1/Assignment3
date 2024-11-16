@@ -6,18 +6,11 @@ from collections import defaultdict  #for create_inverted_index
 from nltk.stem import PorterStemmer
 
 all_tokens = []  #global
-<<<<<<< HEAD
-inverted_index = defaultdict(list) #tdefault dict  will handle missing keys if necessary
-stemmer = PorterStemmer() # Intialize Porter Stemmer
-
-# Used to load the content from a specified directory
-=======
 inverted_index = defaultdict(list)  #tdefault dict will handle missing keys if necessary
 
 stemmer = PorterStemmer()  #Initialize Porter Stemmer
 
 #Used to load the content from a specified directory
->>>>>>> 38991404e6cde5b15e87f8efe9476dd95fd8326d
 def load_content(directory):
     documents = []  #Empty list to store the documents' data
     for subdirectory in os.listdir(directory):
@@ -104,23 +97,6 @@ def save_report(file_path, numDocuments, numUniqueTokens, indexSizeKB):
         file.write(f"Number of indexed documents: {numDocuments}\n")
         file.write(f"Number of unique tokens: {numUniqueTokens}\n")
         file.write(f"Total size of the index on disk (KB): {indexSizeKB}\n")
-
-
-#This is just a trial run that I tried to see if it's parsing through the information correctly. 
-# data_directory = os.path.join(os.path.dirname(__file__), 'ANALYST', 'www_cs_uci_edu')
-# documents_test = load_content(data_directory)
-# print(f"loaded {len(documents_test)} documents")
-#
-# #Create the inverted index
-# inverted_index = create_inverted_index(documents_test) #using documents_test)
-#
-#
-#
-# output_file_path = os.path.join(os.path.dirname(__file__), 'invertedIDX_output.txt')
-# write_to_file(inverted_index, output_file_path)
-#
-# print(f"Inverted index written to {output_file_path}")
-
 
 #Main function
 def main():
