@@ -1,0 +1,3 @@
+Number of indexed documents: 27
+Number of unique tokens: 1951
+Total size of the index on disk (KB): 1143.6689453125

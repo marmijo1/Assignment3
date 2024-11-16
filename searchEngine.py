@@ -7,8 +7,8 @@ from nltk.stem import PorterStemmer
 
 all_tokens = []  #global
 inverted_index = defaultdict(list) #tdefault dict  will handle missing keys if necessary
-
 stemmer = PorterStemmer() # Intialize Porter Stemmer
+
 # Used to load the content from a specified directory
 def load_content(directory):
     documents = [] #Empty list to store the documents' data 
