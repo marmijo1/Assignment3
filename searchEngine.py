@@ -1,5 +1,6 @@
 import os
 import re
+import math
 from bs4 import BeautifulSoup
 import json
 from collections import defaultdict  #for create_inverted_index
@@ -90,6 +91,51 @@ def save_report(file_path, numDocuments, numUniqueTokens, indexSizeKB):
         file.write(f"Number of unique tokens: {numUniqueTokens}\n")
         file.write(f"Total size of the index on disk (KB): {indexSizeKB}\n")
 
+#M2-----------------------------------------
+
+def calculate_tf_idf(posting, token, total_documents, document_frequencies):
+    term_frequency = posting['term_frequency'] # gets the term frequency from a posting 
+    document_frequency = document_frequencies.get(token, 1) # Checks how many documents the token, uses 1 count to avoid 0 errors
+    tf_idf = term_frequency * math.log(total_documents / document_frequency) # Calculates tf_idf
+    return tf_idf
+
+#Uses a query and the invertedIndex to look for the token
+def search(query, invertedIndex, total_documents): 
+    posting_list = [] #List for postings that contain the search query 
+    
+    query_tokens = tokenize_text_and_stem(query) #Stemming and tokenizing query to make search more efficient 
+
+    document_frequencies = {}
+
+    for token in query_tokens: # Iterates through the tokens made from the query
+        postings = inverted_index.get(token, []) # makes a list of postings that contain the token
+        document_frequencies[token] = len(postings)
+        documents = {posting['document'] for posting in postings} # makes a set containing the document id of the postings 
+        posting_list.append(documents) # appends the document names to posting_list
+
+
+    if posting_list:
+        result_docs = set.intersection(*posting_list) # makes a set where only the postings have all the tokens from the search query 
+        
+        if result_docs: # Checks if result_docs isn't empty
+            ranked_results = [] # Creates a ranked results list 
+            for doc in result_docs: # Iterates through result_docs
+                score = 0 # Score Variable to store tf_idf
+                for token in query_tokens: # Goes through the token in the search query
+                    postings = inverted_index.get(token, []) #gets the postings where the token is mentioned 
+                    for posting in postings: # Iterated through the postings
+                        if posting['document'] == doc: # if the posting document id matches the documentid from result_docs
+                            score += calculate_tf_idf(posting, token, total_documents, document_frequencies) # add the tf_idf from this token to total score
+                ranked_results.append((doc, score)) #Once done going through tokens in query then it would add the total score and the document to the list as a tuple
+
+            ranked_results.sort(key=lambda x:x[1], reverse=True) # Sorts the list based on the score, that's why its x[1]
+
+            return [doc for doc, score in ranked_results] #returns a list of just doc ID's from tuples in ranked results. 
+    
+    return [] #Returns empty list if posting_list is empty 
+
+
+
 #Main function
 def main():
     directory = "./ANALYST"
@@ -107,6 +153,14 @@ def main():
     print(f"Index size (KB): {index_size_kb}")
     #Save the report to a text file
     save_report("report.txt", num_documents, num_unique_tokens, index_size_kb)
+
+    with open("inverted_index.json", 'r', encoding='utf-8') as file:
+        inverted_index = json.load(file)
+
+
+#M2 TESTING ------------------------------------------------------------------------------------------------------------------------------
+    #example of using search 
+    #search"ACM", inverted_index, num_documents)
 
 if __name__ == "__main__":
     main()
