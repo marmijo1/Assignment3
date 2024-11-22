@@ -40,8 +40,20 @@ def load_content(directory):
 def clean_html(raw_html):
     if raw_html:
         soup = BeautifulSoup(raw_html, "html.parser")
-        return soup.get_text()
-    return ""
+
+        important_words = set()
+        for bold in soup.find_all(['b', 'strong']):
+            important_words.update(bold.get_text().split())
+        for heading in soup.find_all(['h1', 'h2', 'h3']):
+            important_words.update(heading.get_text().split())
+        title = soup.find('title')
+        if title:
+            important_words.update(title.get_text().split())
+
+        # Clean out all HTML tags and get plain text
+        text = soup.get_text()
+        return text, important_words
+    return "", set()
 
 #Tokenize and stem text
 def tokenize_text_and_stem(text):
@@ -74,10 +86,13 @@ def create_inverted_index(documents):
             term_frequency[token] += 1  #Increment term frequency of a found token per loop
 
         #Generate a posting using the term frequency, (Technically incomplete, since this only uses the "tf" in the tf-idf score)
+        tokens, important_words = tokenize_text_and_stem(content)
         for token, frequency in term_frequency.items():
             posting = {
                 'document': file_name,
-                'term_frequency': frequency
+                'term_frequency': frequency,
+                'important': token in important_words
+
             }
             inverted_index[token].append(posting)  #Add posting to the inv index
 
@@ -100,6 +115,8 @@ def calculate_tf_idf(posting, token, total_documents, document_frequencies):
     term_frequency = posting['term_frequency'] # gets the term frequency from a posting 
     document_frequency = document_frequencies.get(token, 1) # Checks how many documents the token, uses 1 count to avoid 0 errors
     tf_idf = term_frequency * math.log(total_documents / document_frequency) # Calculates tf_idf
+    if posting['import']:
+        tf_idf += 2
     return tf_idf
 
 #Uses a query and the invertedIndex to look for the token
