@@ -5,6 +5,9 @@ from bs4 import BeautifulSoup
 import json
 from collections import defaultdict  #for create_inverted_index
 from nltk.stem import PorterStemmer
+import tkinter as tk
+from tkinter import messagebox
+from tkinter import scrolledtext
 
 inverted_index = defaultdict(list)  #tdefault dict will handle missing keys if necessary
 
@@ -135,6 +138,45 @@ def search(query, invertedIndex, total_documents):
     return [] #Returns empty list if posting_list is empty 
 
 
+#uses search function to display list results of search query
+def search_gui(invertedIndex, total_documents): # not sure if we need invertedIndex since it seems to not be used int search function. Feel free to change
+    def on_search():
+        query = search_bar.get()
+        results = search(query, invertedIndex, total_documents)  # Call the provided search function
+        results_box.delete('1.0', tk.END)  # Clear previous results
+        results_box.insert(tk.END, f"Found {len(results)} search results for '{query}'\n\n")
+        if results:
+            for result in results:
+                results_box.insert(tk.END, f"{result}\n")
+        else:
+            results_box.insert(tk.END, "No results found.")
+
+    # Create the GUI
+    root = tk.Tk()
+    root.title("Search GUI")
+
+    # Frame for search label and search bar
+    search_frame = tk.Frame(root)
+    search_frame.pack(pady=10)
+
+    # Search label
+    search_label = tk.Label(search_frame, text="Search:")
+    search_label.pack(side=tk.LEFT, padx=5)
+
+    # Search bar
+    search_bar = tk.Entry(search_frame, width=50)
+    search_bar.pack(side=tk.LEFT)
+
+    # Results display
+    results_box = scrolledtext.ScrolledText(root, width=70, height=20, wrap=tk.WORD)
+    results_box.pack(pady=10)
+
+    # Search button
+    search_button = tk.Button(root, text="Search", command=on_search)
+    search_button.pack(pady=5)
+
+    root.mainloop()
+
 
 #Main function
 def main():
@@ -158,9 +200,14 @@ def main():
         inverted_index = json.load(file)
 
 
+
 #M2 TESTING ------------------------------------------------------------------------------------------------------------------------------
     #example of using search 
-    #search"ACM", inverted_index, num_documents)
+    #search_result = search("Elon Musk", inverted_index, num_documents)
+    #print(search_result)
+
+    #example of creating search GUI
+    search_gui(inverted_index, num_documents)
 
 if __name__ == "__main__":
     main()
