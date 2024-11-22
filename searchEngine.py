@@ -58,7 +58,7 @@ def clean_html(raw_html):
 #Tokenize and stem text
 def tokenize_text_and_stem(text):
     #Clean the text to exclude HTML tags
-    clean_text = clean_html(text)
+    clean_text, important_words = clean_html(text)
     
     #Find sequences of alphabet characters that are at least 2 characters long
     raw_tokens = re.findall(r'[a-zA-Z]{2,}', clean_text.lower())
@@ -66,7 +66,8 @@ def tokenize_text_and_stem(text):
     #Stem tokens using Porter Stemmer
     stemmed_tokens = [stemmer.stem(token) for token in raw_tokens]
     print(f"Tokens: {stemmed_tokens}")  #Add this line to verify tokens
-    return stemmed_tokens
+    return stemmed_tokens, important_words
+
 
 
 #Create the inverted index
@@ -81,7 +82,8 @@ def create_inverted_index(documents):
         term_frequency = defaultdict(int)  #Will also handle missing keys
 
         #Tokenize and stem the content
-        tokens = tokenize_text_and_stem(content)
+        tokens, important_words = tokenize_text_and_stem(content)
+        
         for token in tokens:  #Iterate through the tokens
             term_frequency[token] += 1  #Increment term frequency of a found token per loop
 
@@ -115,7 +117,7 @@ def calculate_tf_idf(posting, token, total_documents, document_frequencies):
     term_frequency = posting['term_frequency'] # gets the term frequency from a posting 
     document_frequency = document_frequencies.get(token, 1) # Checks how many documents the token, uses 1 count to avoid 0 errors
     tf_idf = term_frequency * math.log(total_documents / document_frequency) # Calculates tf_idf
-    if posting['import']:
+    if posting['important']:
         tf_idf += 2
     return tf_idf
 
@@ -123,12 +125,12 @@ def calculate_tf_idf(posting, token, total_documents, document_frequencies):
 def search(query, invertedIndex, total_documents): 
     posting_list = [] #List for postings that contain the search query 
     
-    query_tokens = tokenize_text_and_stem(query) #Stemming and tokenizing query to make search more efficient 
+    query_tokens, _ = tokenize_text_and_stem(query) #Stemming and tokenizing query to make search more efficient 
 
     document_frequencies = {}
 
     for token in query_tokens: # Iterates through the tokens made from the query
-        postings = inverted_index.get(token, []) # makes a list of postings that contain the token
+        postings = invertedIndex.get(token, []) # makes a list of postings that contain the token
         document_frequencies[token] = len(postings)
         documents = {posting['document'] for posting in postings} # makes a set containing the document id of the postings 
         posting_list.append(documents) # appends the document names to posting_list
@@ -142,7 +144,7 @@ def search(query, invertedIndex, total_documents):
             for doc in result_docs: # Iterates through result_docs
                 score = 0 # Score Variable to store tf_idf
                 for token in query_tokens: # Goes through the token in the search query
-                    postings = inverted_index.get(token, []) #gets the postings where the token is mentioned 
+                    postings = invertedIndex.get(token, []) #gets the postings where the token is mentioned 
                     for posting in postings: # Iterated through the postings
                         if posting['document'] == doc: # if the posting document id matches the documentid from result_docs
                             score += calculate_tf_idf(posting, token, total_documents, document_frequencies) # add the tf_idf from this token to total score
