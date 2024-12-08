@@ -3,13 +3,13 @@ import re
 import math
 from bs4 import BeautifulSoup
 import json
+import hashlib
 from collections import defaultdict  #for create_inverted_index
 from nltk.stem import PorterStemmer
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import scrolledtext
 
-#Michael Armijo 
 
 inverted_index = defaultdict(list)  #tdefault dict will handle missing keys if necessary
 
@@ -18,6 +18,8 @@ stemmer = PorterStemmer()  #Initialize Porter Stemmer
 #Used to load the content from a specified directory
 def load_content(directory):
     documents = []  #Empty list to store the documents' data
+    processed_hashes = set() #Empty set list to store fingerprints
+
     for subdirectory in os.listdir(directory):
         subdirectory_path = os.path.join(directory, subdirectory)
         if os.path.isdir(subdirectory_path):
@@ -30,11 +32,24 @@ def load_content(directory):
                             url = data.get("url")
                             content = data.get("content")
                             encoding = data.get("encoding") #Adds it to the documents list
-                            documents.append({"filename": fileName, "url": url, "content": content, "encoding": encoding})
+                            
+                            if content and content.strip(): #Checks if there is any content 
+                                content_hash = compute_hash(content) # computes the hash number for the given content
+
+                                if content_hash in processed_hashes: #Checks to see if the hash is already existing
+                                    continue
+
+                            processed_hashes.add(content_hash) #Adds has to the set
+                            documents.append({"filename": fileName, "url": url, "content": content, "encoding": encoding, "hash" : content_hash})
+                        
                         except json.JSONDecodeError:
                             print(f"Error decoding JSON in file {fileName}")
     print(f"Loaded {len(documents)} documents")  #Add this line to verify loaded documents
     return documents
+
+#Makes fingerpring for given content
+def compute_hash(content): 
+        return hashlib.md5(content.encode('utf-8')).hexdigest()
 
 #Clean HTML content using BeautifulSoup
 def clean_html(raw_html):
@@ -66,9 +81,12 @@ def tokenize_text_and_stem(text):
 
 #Create the inverted index
 def create_inverted_index(documents):
+    processed_hashes = set() #Set for processed hashes
+
     for document in documents:  #Iterate through documents list
         file_name = document['filename']  #Pull from load_content using type filename and type content
-        content = document['content']
+        content = document['content'] #Pulls the content section 
+
         if content:
             print(f"Document: {document['filename']}, Content length: {len(content)}")  #Verify content length
         term_frequency = defaultdict(int)  #Will also handle missing keys
@@ -85,7 +103,8 @@ def create_inverted_index(documents):
                 'document': file_name,
                 'url': document['url'], #added for GUI 
                 'term_frequency': frequency,
-                'important': token in important_words
+                'important': token in important_words,
+                'hash': document['hash']
             }
             inverted_index[token].append(posting)  #Add posting to the inv index
     return inverted_index
@@ -116,7 +135,8 @@ def search(query, invertedIndex, total_documents):
 
     posting_list = [] #List for postings that contain the search query 
     query_tokens, _ = tokenize_text_and_stem(query) #Stemming and tokenizing query to make search more efficient 
-    document_frequencies = {}
+    document_frequencies = {} 
+    seen_hashes = set() # keeps track of seen hash values
 
     for token in query_tokens: # Iterates through the tokens made from the query
         postings = invertedIndex.get(token, []) # makes a list of postings that contain the token
@@ -127,18 +147,30 @@ def search(query, invertedIndex, total_documents):
 
     if posting_list:
         result_docs = set.intersection(*posting_list) # makes a set where only the postings have all the tokens from the search query 
+        
         if result_docs: # Checks if result_docs isn't empty
             ranked_results = [] # Creates a ranked results list 
+            
             for doc in result_docs: # Iterates through result_docs
                 score = 0 # Score Variable to store tf_idf
                 url = ""
+                hash_value = None #Initialize hash value
+                
                 for token in query_tokens: # Goes through the token in the search query
                     postings = invertedIndex.get(token, []) #gets the postings where the token is mentioned 
+                    
                     for posting in postings: # Iterated through the postings
+                        
                         if posting['document'] == doc: # if the posting document id matches the documentid from result_docs
                             score += calculate_tf_idf(posting, token, total_documents, document_frequencies) # add the tf_idf from this token to total score
                             url = posting['url'] #grab url from posting
-                ranked_results.append((url, score)) #CHECK! Change back url to "doc" if doesnt work #Resolved
+                            hash_value = posting.get('hash') # get the documents hash value
+                            break
+
+                if hash_value and (hash_value not in seen_hashes): # If hash value exists and if its not in seen_hashes
+                    ranked_results.append((url,score)) #Append to the results
+                    seen_hashes.add(hash_value) #Adds to seen hashes. 
+                
                 # Once done going through tokens in query then it would add the total score and the document to the list as a tuple
             ranked_results.sort(key=lambda x:x[1], reverse=True) # Sorts the list based on the score, that's why its x[1]
             return [doc for doc, score in ranked_results] #returns a list of just doc ID's from tuples in ranked results. 
