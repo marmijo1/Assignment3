@@ -9,6 +9,7 @@ import tkinter as tk
 from tkinter import messagebox
 from tkinter import scrolledtext
 
+#Michael Armijo 
 
 inverted_index = defaultdict(list)  #tdefault dict will handle missing keys if necessary
 
