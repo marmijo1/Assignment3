@@ -9,6 +9,7 @@ from nltk.stem import PorterStemmer
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import scrolledtext
+import time
 
 
 inverted_index = defaultdict(list)  #tdefault dict will handle missing keys if necessary
@@ -181,9 +182,12 @@ def search(query, invertedIndex, total_documents):
 def search_gui(invertedIndex, total_documents): # not sure if we need invertedIndex since it seems to not be used int search function. Feel free to change
     def on_search():
         query = search_bar.get()
+        start_time = time.time()  # Start the timer
         results = search(query, invertedIndex, total_documents)  # Call the provided search function
+        end_time = time.time()  # End the timer
+        elapsed_time = end_time - start_time  # Calculate elapsed time
         results_box.delete('1.0', tk.END)  # Clear previous results
-        results_box.insert(tk.END, f"Found {len(results)} search results for '{query}'\n\n")
+        results_box.insert(tk.END, f"Found {len(results)} search results for '{query}' in {elapsed_time:.5f} seconds\n\n")
 
         results_box.tag_configure("blue_underline", foreground = "blue") #for hyperlink look
 
